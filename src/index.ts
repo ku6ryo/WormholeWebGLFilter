@@ -70,38 +70,40 @@ async function main() {
     alert("getUserMedia not supported on your browser!");
   }
 
+  let frames = 0
+  let r = 0
   async function process () {
     stats.begin()
     cameraContext.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height)
     cameraContext.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height)
 
-    maskContext.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
-    maskContext.strokeStyle = 'green';
-    maskContext.lineWidth = 40
-    maskContext.filter = "blur(20px)"
-
-    const hands = await detector.estimateHands(cameraCanvas)
-    let r = 0
-    if (hands.length > 1) {
-      const hand1 = hands[0]
-      const indexFinger1 = hand1.keypoints[8]
-      const { x: x1, y: y1 } = indexFinger1
-      const hand2 = hands[1]
-      const indexFinger2 = hand2.keypoints[8]
-      const { x: x2, y: y2 } = indexFinger2
-      const cx = (x1 + x2) / 2
-      const cy = (y1 + y2) / 2
-      r = Math.sqrt((cx - x1) ** 2 + (cy - y1) ** 2)
-      maskContext.fillStyle = 'green';
-      maskContext.beginPath()
-      maskContext.ellipse(cx, cy, r * 1.2, r * 1.2, 0, 0, 2 * Math.PI);
-      maskContext.closePath()
-      maskContext.fill()
-      maskContext.fillStyle = 'red';
-      maskContext.beginPath()
-      maskContext.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI);
-      maskContext.fill()
-      maskContext.closePath()
+    if (frames % 3 == 0) {
+      maskContext.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
+      maskContext.strokeStyle = 'green';
+      maskContext.lineWidth = 40
+      maskContext.filter = "blur(20px)"
+      const hands = await detector.estimateHands(cameraCanvas)
+      if (hands.length > 1) {
+        const hand1 = hands[0]
+        const indexFinger1 = hand1.keypoints[8]
+        const { x: x1, y: y1 } = indexFinger1
+        const hand2 = hands[1]
+        const indexFinger2 = hand2.keypoints[8]
+        const { x: x2, y: y2 } = indexFinger2
+        const cx = (x1 + x2) / 2
+        const cy = (y1 + y2) / 2
+        r = Math.sqrt((cx - x1) ** 2 + (cy - y1) ** 2)
+        maskContext.fillStyle = 'green';
+        maskContext.beginPath()
+        maskContext.ellipse(cx, cy, r * 1.2, r * 1.2, 0, 0, 2 * Math.PI);
+        maskContext.closePath()
+        maskContext.fill()
+        maskContext.fillStyle = 'red';
+        maskContext.beginPath()
+        maskContext.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI);
+        maskContext.fill()
+        maskContext.closePath()
+      }
     }
 
     effector.process(maskCanvas, cameraVideo, r)
@@ -122,6 +124,8 @@ async function main() {
     // Reset settings
     mainContext.filter = "none"
     mainContext.globalAlpha = 1.0
+
+    frames += 1;
 
     stats.end()
     requestAnimationFrame(process)
