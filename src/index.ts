@@ -77,7 +77,7 @@ async function main() {
     cameraContext.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height)
     cameraContext.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height)
 
-    if (frames % 3 == 0) {
+    if (frames % 5 == 0) {
       maskContext.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
       maskContext.strokeStyle = 'green';
       maskContext.lineWidth = 40
