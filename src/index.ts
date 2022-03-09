@@ -72,6 +72,8 @@ async function main() {
 
   let frames = 0
   let r = 0
+  let cx = 0
+  let cy  = 0
   async function process () {
     stats.begin()
     cameraContext.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height)
@@ -90,34 +92,26 @@ async function main() {
         const hand2 = hands[1]
         const indexFinger2 = hand2.keypoints[8]
         const { x: x2, y: y2 } = indexFinger2
-        const cx = (x1 + x2) / 2
-        const cy = (y1 + y2) / 2
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
         r = Math.sqrt((cx - x1) ** 2 + (cy - y1) ** 2)
-        maskContext.fillStyle = 'green';
-        maskContext.beginPath()
-        maskContext.ellipse(cx, cy, r * 1.2, r * 1.2, 0, 0, 2 * Math.PI);
-        maskContext.closePath()
-        maskContext.fill()
-        maskContext.fillStyle = 'red';
-        maskContext.beginPath()
-        maskContext.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI);
-        maskContext.fill()
-        maskContext.closePath()
+      } else {
+        if (r < 10) {
+          r = 0
+        } else {
+          r *= 0.9
+        }
       }
+      maskContext.fillStyle = 'red';
+      maskContext.beginPath()
+      maskContext.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI);
+      maskContext.fill()
+      maskContext.closePath()
     }
 
     effector.process(maskCanvas, cameraVideo, r)
 
     mainContext.clearRect(0, 0, mainCanvas.width, mainCanvas.height)
-    /*
-    if (detected && Math.random() < 0.2) {
-      mainContext.filter = "grayscale(100%) brightness(200%)"
-      mainContext.drawImage(cameraCanvas, 0, 0, mainCanvas.width, mainCanvas.height)
-    } else {
-      mainContext.filter = "grayscale(100%)"
-      mainContext.drawImage(cameraCanvas, 0, 0, mainCanvas.width, mainCanvas.height)
-    }
-    */
     mainContext.filter = "blur(2px)"
     mainContext.drawImage(effector.getCanvas(), 0, 0, mainCanvas.width, mainCanvas.height)
 
