@@ -19,7 +19,7 @@ export class Effector {
   #program: WebGLProgram
   #width = 360
   #height = 240
-  #noiseBitmap: ImageBitmap | null = null
+  #noiseBitmap: HTMLImageElement | null = null
 
   constructor() {
     this.#canvas = document.createElement('canvas')
@@ -31,7 +31,7 @@ export class Effector {
 
   async prepare() {
     const img = await loadImage(noiseTextureUrl)
-    this.#noiseBitmap = await createImageBitmap(img)
+    this.#noiseBitmap = img;
   }
 
   private getWebGLContext() {
@@ -161,7 +161,7 @@ export class Effector {
     gl.deleteTexture(videoTexture)
   }
 
-  createTexture(image: HTMLCanvasElement | ImageBitmap | HTMLVideoElement) {
+  createTexture(image: HTMLCanvasElement | ImageBitmap | HTMLVideoElement | HTMLImageElement) {
     const gl = this.getWebGLContext()
     // Create a texture.
     var texture = gl.createTexture();
