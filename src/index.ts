@@ -2,6 +2,9 @@ import Stats from "stats.js"
 import { Effector } from "./Effector/Effector"
 import { SupportedModels, createDetector } from "@tensorflow-models/hand-pose-detection"
 const { MediaPipeHands } = SupportedModels
+import * as tf from "@tensorflow/tfjs-core"
+import "@tensorflow/tfjs-backend-webgl"
+tf.setBackend("webgl")
 
 const stats = new Stats()
 document.body.appendChild(stats.dom)
@@ -10,8 +13,12 @@ main()
 
 async function main() {
   const detector = await createDetector(MediaPipeHands, {
+    runtime: "tfjs",
+    modelType: "lite",
+    /*
     runtime: "mediapipe",
     solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/",
+    */
   })
 
   const effector = new Effector()
@@ -79,7 +86,6 @@ async function main() {
     cameraContext.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height)
     cameraContext.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height)
 
-    if (frames % 5 == 0) {
       maskContext.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
       maskContext.strokeStyle = 'green';
       maskContext.lineWidth = 40
@@ -110,7 +116,6 @@ async function main() {
       maskContext.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI);
       maskContext.fill()
       maskContext.closePath()
-    }
 
     effector.process(maskCanvas, cameraVideo, r)
 
