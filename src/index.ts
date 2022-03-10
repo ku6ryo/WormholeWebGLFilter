@@ -13,12 +13,8 @@ main()
 
 async function main() {
   const detector = await createDetector(MediaPipeHands, {
-    runtime: "tfjs",
-    modelType: "lite",
-    /*
     runtime: "mediapipe",
     solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/",
-    */
   })
 
   const effector = new Effector()
@@ -85,11 +81,10 @@ async function main() {
     stats.begin()
     cameraContext.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height)
     cameraContext.drawImage(cameraVideo, 0, 0, cameraCanvas.width, cameraCanvas.height)
+    let runModel = frames % 5 === 0
+    let detected = false
 
-      maskContext.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
-      maskContext.strokeStyle = 'green';
-      maskContext.lineWidth = 40
-      maskContext.filter = "blur(20px)"
+    if (runModel) {
       const hands = await detector.estimateHands(cameraCanvas, {
         flipHorizontal: false,
         staticImageMode: false,
@@ -104,18 +99,23 @@ async function main() {
         cx = (x1 + x2) / 2
         cy = (y1 + y2) / 2
         r = Math.sqrt((cx - x1) ** 2 + (cy - y1) ** 2)
-      } else {
-        if (r < 10) {
-          r = 0
-        } else {
-          r *= 0.9
-        }
+        detected = true;
       }
-      maskContext.fillStyle = 'red';
-      maskContext.beginPath()
-      maskContext.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI);
-      maskContext.fill()
-      maskContext.closePath()
+    }
+    if (!runModel || !detected) {
+      if (r < 10) {
+        r = 0
+      } else {
+        r *= 0.9
+      }
+    }
+    maskContext.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
+    maskContext.filter = "blur(20px)"
+    maskContext.fillStyle = 'red';
+    maskContext.beginPath()
+    maskContext.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI);
+    maskContext.fill()
+    maskContext.closePath()
 
     effector.process(maskCanvas, cameraVideo, r)
 
