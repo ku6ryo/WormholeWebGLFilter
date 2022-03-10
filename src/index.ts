@@ -2,9 +2,6 @@ import Stats from "stats.js"
 import { Effector } from "./Effector/Effector"
 import { SupportedModels, createDetector } from "@tensorflow-models/hand-pose-detection"
 const { MediaPipeHands } = SupportedModels
-import * as tf from "@tensorflow/tfjs-core"
-import "@tensorflow/tfjs-backend-webgl"
-tf.setBackend("webgl")
 
 const stats = new Stats()
 document.body.appendChild(stats.dom)
