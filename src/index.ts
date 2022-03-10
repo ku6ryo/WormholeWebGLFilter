@@ -11,7 +11,7 @@ main()
 async function main() {
   const detector = await createDetector(MediaPipeHands, {
     runtime: "mediapipe",
-    solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1635986972/",
+    solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/",
   })
 
   const effector = new Effector()
