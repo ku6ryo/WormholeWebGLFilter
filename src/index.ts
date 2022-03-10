@@ -84,7 +84,10 @@ async function main() {
       maskContext.strokeStyle = 'green';
       maskContext.lineWidth = 40
       maskContext.filter = "blur(20px)"
-      const hands = await detector.estimateHands(cameraCanvas)
+      const hands = await detector.estimateHands(cameraCanvas, {
+        flipHorizontal: false,
+        staticImageMode: false,
+      })
       if (hands.length > 1) {
         const hand1 = hands[0]
         const indexFinger1 = hand1.keypoints[8]
