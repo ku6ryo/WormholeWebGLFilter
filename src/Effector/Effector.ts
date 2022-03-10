@@ -17,16 +17,22 @@ export class Effector {
   #vertShader: WebGLShader
   #fragShader: WebGLShader
   #program: WebGLProgram
-  #width = 360
-  #height = 240
   #noiseBitmap: HTMLImageElement | null = null
+
+  #uEffectLocation: WebGLUniformLocation
+  #uNoiseLocation: WebGLUniformLocation
+  #uVideoLocation: WebGLUniformLocation
 
   constructor() {
     this.#canvas = document.createElement('canvas')
     const gl = this.getWebGLContext()
     this.#vertShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource)
     this.#fragShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource)
-    this.#program = createProgram(gl, this.#vertShader, this.#fragShader);
+    this.#program = createProgram(gl, this.#vertShader, this.#fragShader)
+    
+    this.#uEffectLocation = this.createUniformLocation(gl, this.#program, "u_effectMask")
+    this.#uNoiseLocation = this.createUniformLocation(gl, this.#program, "u_noise")
+    this.#uVideoLocation = this.createUniformLocation(gl, this.#program, "u_video")
   }
 
   async prepare() {
@@ -47,8 +53,6 @@ export class Effector {
   }
 
   setSize(width: number, height: number) {
-    this.#width = width
-    this.#height = height
     this.#canvas.width = width
     this.#canvas.height = height
   }
@@ -60,36 +64,15 @@ export class Effector {
     // look up where the vertex data needs to go.
     var positionLocation = gl.getAttribLocation(this.#program, "a_position");
     var texcoordLocation = gl.getAttribLocation(this.#program, "a_texCoord");
-    // Create a buffer to put three 2d clip space points in
-    var positionBuffer = gl.createBuffer();
-    // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-     // Set a rectangle the same size as the image.
-    this.setRectangle(gl, 0, 0, this.#width, this.#height);
-
-    // provide texture coordinates for the rectangle.
-    var texcoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      0.0,  0.0,
-      1.0,  0.0,
-      0.0,  1.0,
-      0.0,  1.0,
-      1.0,  0.0,
-      1.0,  1.0,
-    ]), gl.STATIC_DRAW);
 
     const maskTexture = this.createTexture(mask)
     const noiseTexture1 = this.createTexture(this.#noiseBitmap)
     const videoTexture = this.createTexture(video)
-    const u_image1Location = gl.getUniformLocation(this.#program, "u_effectMask");
-    const u_image2Location = gl.getUniformLocation(this.#program, "u_noise");
-    const u_image3Location = gl.getUniformLocation(this.#program, "u_video");
 
     // set which texture units to render with.
-    gl.uniform1i(u_image1Location, 1);  // texture unit 1
-    gl.uniform1i(u_image2Location, 2);  // texture unit 2
-    gl.uniform1i(u_image3Location, 3);  // texture unit 2
+    gl.uniform1i(this.#uEffectLocation, 1); // texture unit 1
+    gl.uniform1i(this.#uNoiseLocation, 2); // texture unit 2
+    gl.uniform1i(this.#uVideoLocation, 3); // texture unit 3
 
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, maskTexture);
@@ -121,12 +104,16 @@ export class Effector {
     // Tell it to use our program (pair of shaders)
     gl.useProgram(this.#program);
 
+    // Create a buffer to put three 2d clip space points in
+    var positionBuffer = gl.createBuffer();
+    // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+     // Set a rectangle the same size as the image.
+    this.setRectangle(gl, 0, 0, this.#canvas.width, this.#canvas.height);
     // Turn on the position attribute
     gl.enableVertexAttribArray(positionLocation);
-
     // Bind the position buffer.
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
     // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
     var size = 2;          // 2 components per iteration
     var type = gl.FLOAT;   // the data is 32bit floats
@@ -135,13 +122,24 @@ export class Effector {
     var offset = 0;        // start at the beginning of the buffer
     gl.vertexAttribPointer(
         positionLocation, size, type, normalize, stride, offset);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+     
 
+    // provide texture coordinates for the rectangle.
+    var texcoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      0.0,  0.0,
+      1.0,  0.0,
+      0.0,  1.0,
+      0.0,  1.0,
+      1.0,  0.0,
+      1.0,  1.0,
+    ]), gl.STATIC_DRAW);
     // Turn on the texcoord attribute
     gl.enableVertexAttribArray(texcoordLocation);
-
     // bind the texcoord buffer.
     gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-
     // Tell the texcoord attribute how to get data out of texcoordBuffer (ARRAY_BUFFER)
     var size = 2;          // 2 components per iteration
     var type = gl.FLOAT;   // the data is 32bit floats
@@ -150,6 +148,7 @@ export class Effector {
     var offset = 0;        // start at the beginning of the buffer
     gl.vertexAttribPointer(
         texcoordLocation, size, type, normalize, stride, offset);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
     // Draw the rectangle.
     var primitiveType = gl.TRIANGLES;
@@ -175,6 +174,14 @@ export class Effector {
     // Upload the image into the texture.
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
     return texture;
+  }
+
+  createUniformLocation(gl: WebGLRenderingContext, program: WebGLProgram, name: string) {
+    const location = gl.getUniformLocation(program, name)
+    if (!location) {
+      throw new Error(`no uniform location: ${name}`)
+    }
+    return location
   }
 
   setRectangle(gl: WebGLRenderingContext, x: number, y: number, width: number, height: number) {
